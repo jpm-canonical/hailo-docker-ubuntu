@@ -1,17 +1,18 @@
 # Define the tagged versions to checkout from Github
-ARG TAPPAS_VERSION="v3.28.1"
+ARG TAPPAS_VERSION="v3.29.0"
 ARG HAILORT_VERSION="v4.18.0"
 
 FROM ubuntu:24.04
 
 WORKDIR /root
 
-RUN apt-get update && apt-get install -y software-properties-common
+RUN apt-get update && apt-get install -y software-properties-common sudo pkg-config gcc-9 g++-9
 RUN add-apt-repository ppa:deadsnakes/ppa
 RUN apt install -y python3.11 python3.11-venv python3.11-dev
 
 # Change default python to 3.11
 RUN rm -f /usr/bin/python && ln -s /usr/bin/python3.11 /usr/bin/python
+RUN rm -f /usr/bin/python3 && ln -s /usr/bin/python3.11 /usr/bin/python3
 
 # Tappas deps
 RUN apt-get install -y rsync ffmpeg x11-utils python3-dev python3-pip python3-setuptools python3-virtualenv python-gi-dev libgirepository1.0-dev gcc-12 g++-12 cmake git libzmq3-dev
@@ -32,11 +33,11 @@ RUN mkdir -p tappas/hailort
 RUN git clone https://github.com/hailo-ai/hailort.git tappas/hailort/sources
 RUN cd tappas/hailort/sources && git checkout ${HAILORT_VERSION}
 
-RUN apt-get install -y sudo pkg-config gcc-9 g++-9
-RUN rm -f /usr/bin/python3 && ln -s /usr/bin/python3.11 /usr/bin/python3
+# Get RPi 5 examples
+RUN git clone --depth 1 https://github.com/raspberrypi/rpicam-apps.git
 
-# RUN cd tappas/hailrt/sources && cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DHAILO_BUILD_EXAMPLES=1 && sudo cmake --build build --config release --target install
-# RUN cd tappas && ./install.sh
-# RUN cd tappas && ./install.sh --skip-hailort
+# Compile Hailort from source according to https://hailo.ai/developer-zone/documentation/hailort-v4-18-0/?sp_referrer=install/install.html#compiling-hailort-from-sources
+RUN cd tappas/hailort/sources && cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DHAILO_BUILD_EXAMPLES=1 && sudo cmake --build build --config release --target install
+
+# Compile Tappas from source according to https://github.com/hailo-ai/tappas/blob/master/docs/installation/manual-install.rst
 RUN cd tappas && ./install.sh --skip-hailort --target-platform rpi
-# RUN cd tappas && ./install.sh --skip-hailort --target-platform rockchip
